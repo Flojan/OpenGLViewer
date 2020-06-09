@@ -48,9 +48,19 @@ class OpenGLViewer:
         glEnable(GL_DEPTH_TEST)
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glMatrixMode(GL_PROJECTION)
-        glOrtho(-self.width/2, self.width/2, -
-                self.height/2, self.height/2, -2, 2)
+        glOrtho(
+            -1.5 * self.width / self.height, 1.5 *
+            self.width / self.height, -1.5, 1.5, -1.0, 1.0
+        )
         glMatrixMode(GL_MODELVIEW)
+
+        glLoadIdentity()
+
+        glEnable(GL_NORMALIZE)
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
 
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.onMouseButton)

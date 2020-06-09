@@ -18,7 +18,6 @@ class Scene:
         self.showVector = True
         self.point = np.array([0, 0])
         self.vector = np.array([10, 10])
-        self.pointsize = 3
         self.width = width
         self.height = height
         self.vertices = []
@@ -28,9 +27,10 @@ class Scene:
         self.boundingbox = []
         self.center = []
         self.scale = []
-
-        glPointSize(self.pointsize)
-        glLineWidth(self.pointsize)
+        self.backgroundCol = (1.0, 1.0, 1.0, 1.0)
+        self.myvbo = []
+        self.light = (0.0, 0.0, 0.0)
+        self.objectCol = (0.05, 0.6, 1.0, 1.0)
 
     # read Object from File
     def readObject(self):
@@ -44,13 +44,15 @@ class Scene:
                     # print(line.split()[1:])
                     # input()
                     if line.startswith('f'):  # Polygone
-                        self.faces.append(line[1:])
+                        self.faces.append(line.split()[1:])
                     if line.startswith('v'):  # Objekt-Punkte
                         self.vertices.append(
                             [float(v) for v in line.split()[1:]])
                     if line.startswith('vn'):  # Vertex-Normalen
                         self.normals.append(
                             [float(vn) for vn in line.split()[1:]])
+                        # print(self.normals)
+                        # input("normals")
 
             self.boundingbox = [list(map(min, zip(*self.vertices))),
                                 list(map(max, zip(*self.vertices)))]
@@ -69,12 +71,13 @@ class Scene:
                     self.normals.append([0, 0, 0])
                     counter += 1
                 for face in self.faces:
-                    # print(face.split())
-                    # print(self.vertices)
+                    # print(face.split("//"))
+                    # print(face)
+                    # # print(self.vertices)
                     # input()
-                    n_p1 = int(float(face.split()[0])) - 1
-                    n_p2 = int(float(face.split()[1])) - 1
-                    n_p3 = int(float(face.split()[2])) - 1
+                    n_p1 = int(float(face[0])) - 1
+                    n_p2 = int(float(face[1])) - 1
+                    n_p3 = int(float(face[2])) - 1
                     p1 = self.vertices[n_p1]
                     p2 = self.vertices[n_p2]
                     p3 = self.vertices[n_p3]
@@ -90,9 +93,9 @@ class Scene:
                         self.normals[n_p3], cross_result).tolist()
 
             for face in self.faces:
-                print("face", face)
-                for points in face.split():
-                    print("points", points)
+                # print("face", face)
+                for points in face:
+                    # print("points", points)
                     if '/' in points:
                         # print(points)
                         # input()
@@ -104,7 +107,7 @@ class Scene:
                         # print(points)
                         # input()
                         vn = int(points) - 1
-                        self.data.append(self.vertices[vn] + normals[vn])
+                        self.data.append(self.vertices[vn] + self.normals[vn])
             glScale(self.scale, self.scale, self.scale)
             glTranslate(-self.center[0], -self.center[1], -self.center[2])
 
@@ -134,9 +137,8 @@ class Scene:
             n = np.array([0, -1])
             self.vector = self.mirror(self.vector, n)
 
-        #print(self.point, self.vector)
+        # mirror a vector v at plane with normal n
 
-    # mirror a vector v at plane with normal n
     def mirror(self, v, n):
         # normalize n
         normN = n / np.linalg.norm(n)
@@ -147,23 +149,26 @@ class Scene:
         return mv
 
     # render
-    def render(self):
-        # render the vector starting at the point
-        if self.showVector:
-            glColor(1.0, 0.0, 0.0)
-            glBegin(GL_LINES)
-            # the line from the point to the end of the vector
-            glVertex2fv(self.point)
-            glVertex2fv(self.point+self.vector)
 
-            # make an arrow at the tip of the vector
-            normvector = self.vector/np.linalg.norm(self.vector)
-            rotnormvec = np.array([-normvector[1], normvector[0]])
-            p1 = self.point + self.vector - 6*normvector
-            a = p1 + 3*self.pointsize/2*rotnormvec
-            b = p1 - 3*self.pointsize/2*rotnormvec
-            glVertex2fv(self.point+self.vector)
-            glVertex2fv(a)
-            glVertex2fv(self.point+self.vector)
-            glVertex2fv(b)
-            glEnd()
+    def render(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClearColor(self.backgroundCol[0], self.backgroundCol[1],
+                     self.backgroundCol[2], self.backgroundCol[3])
+        glColor3f(self.objectCol[0], self.objectCol[1], self.objectCol[2])
+        self.myvbo = vbo.VBO(np.array(self.data, 'f'))
+        self.myvbo.bind()
+
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnable(GL_COLOR_MATERIAL)
+        glVertexPointer(3, GL_FLOAT, 24, self.myvbo)
+        glNormalPointer(GL_FLOAT, 24, self.myvbo + 12)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glColor3f(self.objectCol[0],
+                  self.objectCol[1], self.objectCol[2])
+        glDrawArrays(GL_TRIANGLES, 0, len(self.data))
+
+        self.myvbo.unbind()
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glFlush()
