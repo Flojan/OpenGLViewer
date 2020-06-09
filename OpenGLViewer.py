@@ -1,29 +1,3 @@
-"""
-/*******************************************************************************
- *
- *            #, #,         CCCCCC  VV    VV MM      MM RRRRRRR
- *           %  %(  #%%#   CC    CC VV    VV MMM    MMM RR    RR
- *           %    %## #    CC        V    V  MM M  M MM RR    RR
- *            ,%      %    CC        VV  VV  MM  MM  MM RRRRRR
- *            (%      %,   CC    CC   VVVV   MM      MM RR   RR
- *              #%    %*    CCCCCC     VV    MM      MM RR    RR
- *             .%    %/
- *                (%.      Computer Vision & Mixed Reality Group
- *
- ******************************************************************************/
-/**          @copyright:   Hochschule RheinMain,
- *                         University of Applied Sciences
- *              @author:   Prof. Dr. Ulrich Schwanecke
- *             @version:   0.9
- *                @date:   03.06.2019
- ******************************************************************************/
-/**         RenderWindow.py
- *
- *          Simple Python OpenGL program that uses PyOpenGL + GLFW to get an
- *          OpenGL 3.2 context and display some 2D animation.
- ****
-"""
-
 import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -36,7 +10,7 @@ import math
 from Scene import Scene
 
 
-class RenderWindow:
+class OpenGLViewer:
     """GLFW Rendering window class"""
 
     def __init__(self):
@@ -50,12 +24,6 @@ class RenderWindow:
 
         # restore cwd
         os.chdir(cwd)
-
-        # version hints
-        #glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3)
-        #glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
-        #glfw.WindowHint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
-        #glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
         # buffer hints
         glfw.window_hint(glfw.DEPTH_BITS, 32)
@@ -125,6 +93,8 @@ class RenderWindow:
         # initializer timer
         glfw.set_time(0.0)
         t = 0.0
+        self.scene.readObject()
+
         while not glfw.window_should_close(self.window) and not self.exitNow:
             # update every x seconds
             currT = glfw.get_time()
@@ -149,7 +119,7 @@ class RenderWindow:
 # main() function
 def main():
     print("Simple glfw render Window")
-    rw = RenderWindow()
+    rw = OpenGLViewer()
     rw.run()
 
 
