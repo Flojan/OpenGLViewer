@@ -92,6 +92,41 @@ class OpenGLViewer:
                 # toggle animation
                 self.animation = not self.animation
 
+            # Change Color to Default
+            if key == glfw.KEY_D:
+                self.scene.backgroundCol = (1.0, 1.0, 1.0, 0.0)
+                self.scene.objectCol = (0.05, 0.6, 1.0, 1.0)
+
+            # Change Color to Black
+            if key == glfw.KEY_S:
+                self.scene.backgroundCol = (0.0, 0.0, 0.0, 0.0)
+            if key == glfw.KEY_S and mods == glfw.MOD_SHIFT:
+                self.scene.objectCol = (0.0, 0.0, 0.0, 0.0)
+
+            # Change Color to White
+            if key == glfw.KEY_W:
+                self.scene.backgroundCol = (1.0, 1.0, 1.0, 0.0)
+            if key == glfw.KEY_W and mods == glfw.MOD_SHIFT:
+                self.scene.objectCol = (1.0, 1.0, 1.0, 0.0)
+
+            # Change Color to Red
+            if key == glfw.KEY_R:
+                self.scene.backgroundCol = (1.0, 0.0, 0.0, 0.0)
+            if key == glfw.KEY_R and mods == glfw.MOD_SHIFT:
+                self.scene.objectCol = (1.0, 0.0, 0.0, 0.0)
+
+            # Change Color to Yellow
+            if key == glfw.KEY_G:
+                self.scene.backgroundCol = (1.0, 1.0, 0.0, 0.0)
+            if key == glfw.KEY_G and mods == glfw.MOD_SHIFT:
+                self.scene.objectCol = (1.0, 1.0, 0.0, 0.0)
+
+            # Change Color to Blue
+            if key == glfw.KEY_B:
+                self.scene.backgroundCol = (0.0, 0.0, 1.0, 0.0)
+            if key == glfw.KEY_B and mods == glfw.MOD_SHIFT:
+                self.scene.objectCol = (0.0, 0.0, 1.0, 0.0)
+
     def onSize(self, win, width, height):
         print("onsize: ", win, width, height)
         self.width = width

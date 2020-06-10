@@ -27,18 +27,16 @@ class Scene:
         self.boundingbox = []
         self.center = []
         self.scale = []
-        self.backgroundCol = (1.0, 1.0, 1.0, 1.0)
         self.myvbo = []
         self.light = (0.0, 0.0, 0.0)
+        self.backgroundCol = (1.0, 1.0, 1.0, 1.0)
         self.objectCol = (0.05, 0.6, 1.0, 1.0)
 
     # read Object from File
     def readObject(self):
         if len(sys.argv) == 2:
-
             f = open(sys.argv[1])
             lines = f.readlines()
-
             for line in lines:
                 if line:
                     # print(line.split()[1:])
