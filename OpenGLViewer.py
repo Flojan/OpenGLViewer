@@ -80,27 +80,67 @@ class OpenGLViewer:
         # mouse
         self.startZoomPoint = (0, 0)
         self.middleMouseClicked = False
-        self.lasty = 0
+        self.leftMouseClicked = False
+        self.lastY = 0
+        self.rotating = (0, 0, 0)
+        self.angle = 0
+        self.axis = np.array([1, 0, 0])
+
+    def projectOnSphere(self, x, y, r):
+        x, y = x - self.width / 2.0, self.height / 2.0 - y
+        a = min(r * r, x ** 2 + y ** 2)
+        z = np.sqrt(r * r - a)
+        l = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+        return x / l, y / l, z / l
 
     def onMouseButton(self, win, button, action, mods):
+        r = min(self.width, self.height) / 2.0
         print("mouse button: ", win, button, action, mods)
         if button == glfw.MOUSE_BUTTON_MIDDLE:
             if action == glfw.PRESS:
                 self.middleMouseClicked = True
             elif action == glfw.RELEASE:
                 self.middleMouseClicked = False
-                # self.angle = 0
-            print("heran- bzw. wegzoomen")
+
+        if button == glfw.MOUSE_BUTTON_LEFT:
+            if action == glfw.PRESS:
+                self.leftMouseClicked = True
+                self.rotating = self.projectOnSphere(
+                    glfw.get_cursor_pos(self.window)[0], glfw.get_cursor_pos(self.window)[1], r)
+            elif action == glfw.RELEASE:
+                self.leftMouseClicked = False
+                self.rotate(self.angle, self.axis)
+                self.angle = 0
 
     def onMouseMove(self, win, posX, posY):
         r = min(self.width, self.height) / 2.0
         if self.middleMouseClicked:
             y = posY - self.startZoomPoint[1]
-            if self.lasty - y > 0:
-                glScale(0.9, 0.9, 0.9)
+            if self.lastY - y > 0:
+                print(self.lastY - y)
+                glScale(0.95, 0.95, 0.95)
             else:
-                glScale(1.1, 1.1, 1.1)
-            self.lasty = y
+                glScale(1.05, 1.05, 1.05)
+            self.lastY = y
+        if self.leftMouseClicked:
+            move = self.projectOnSphere(posX, posY, r)
+            self.axis = np.cross(self.rotating, move)
+            self.angle = math.acos(np.dot(self.rotating, move))
+            glRotate(1, self.axis[0], self.axis[1], self.axis[2])
+
+        self.rotating = self.projectOnSphere(posX, posY, r)
+
+    def rotate(self, angle, axis):
+        c, mc = np.cos(angle), 1 - np.cos(angle)
+        s = np.sin(angle)
+        l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
+        x, y, z = np.array(axis) / l
+        r = np.array([
+            [x * x * mc + c, x * y * mc - z * s, x * z * mc + y * s, 0],
+            [x * y * mc + z * s, y * y * mc + c, y * z * mc - x * s, 0],
+            [x * z * mc - y * s, y * z * mc + x * s, z * z * mc + c, 0],
+            [0, 0, 0, 1]])
+        return r.transpose()
 
     def onKeyboard(self, win, key, scancode, action, mods):
         print("keyboard: ", win, key, scancode, action, mods)
