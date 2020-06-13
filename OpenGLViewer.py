@@ -33,7 +33,8 @@ class OpenGLViewer:
 
         # make a window
         self.width, self.height = 640, 480
-        self.aspect = self.width/float(self.height)
+        self.aspectwidth = float(self.width) / self.height
+        self.aspectheight = float(self.height) / self.width
         self.window = glfw.create_window(
             self.width, self.height, "2D Graphics", None, None)
         if not self.window:
@@ -64,9 +65,9 @@ class OpenGLViewer:
 
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.onMouseButton)
-        glfw.set_key_callback(self.window, self.onKeyboard)
-        glfw.set_window_size_callback(self.window, self.onSize)
         glfw.set_cursor_pos_callback(self.window, self.onMouseMove)
+        glfw.set_key_callback(self.window, self.onKeyboard)
+        glfw.set_window_size_callback(self.window, self.preventDistort)
 
         # create 3D
         self.scene = Scene(self.width, self.height)
@@ -82,9 +83,27 @@ class OpenGLViewer:
         self.middleMouseClicked = False
         self.leftMouseClicked = False
         self.lastY = 0
-        self.rotating = (0, 0, 0)
+        self.doRotation = (0, 0, 0)
         self.angle = 0
         self.axis = np.array([1, 0, 0])
+
+    def preventDistort(self, win, width, height):
+        self.width = width
+        self.height = height
+        self.aspectwidth = float(self.width) / self.height
+        self.aspectheight = float(self.height) / self.width
+        glViewport(0, 0, self.width, self.height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+
+        if width <= height:
+            glOrtho(-1.5, 1.5, (-1.5) * self.aspectheight,
+                    1.5 * self.aspectheight, -1.0, 1.0)
+        else:
+            glOrtho(-1.5 * self.aspectwidth, 1.5 *
+                    self.aspectwidth, -1.5, 1.5, -1.0, 1.0)
+
+        glMatrixMode(GL_PROJECTION)
 
     def projectOnSphere(self, x, y, r):
         x, y = x - self.width / 2.0, self.height / 2.0 - y
@@ -105,8 +124,8 @@ class OpenGLViewer:
         if button == glfw.MOUSE_BUTTON_LEFT:
             if action == glfw.PRESS:
                 self.leftMouseClicked = True
-                self.rotating = self.projectOnSphere(
-                    glfw.get_cursor_pos(self.window)[0], glfw.get_cursor_pos(self.window)[1], r)
+                self.doRotation = self.projectOnSphere(glfw.get_cursor_pos(
+                    self.window)[0], glfw.get_cursor_pos(self.window)[1], r)
             elif action == glfw.RELEASE:
                 self.leftMouseClicked = False
                 self.rotate(self.angle, self.axis)
@@ -122,13 +141,16 @@ class OpenGLViewer:
             else:
                 glScale(1.05, 1.05, 1.05)
             self.lastY = y
-        if self.leftMouseClicked:
-            move = self.projectOnSphere(posX, posY, r)
-            self.axis = np.cross(self.rotating, move)
-            self.angle = math.acos(np.dot(self.rotating, move))
-            glRotate(1, self.axis[0], self.axis[1], self.axis[2])
 
-        self.rotating = self.projectOnSphere(posX, posY, r)
+        if self.leftMouseClicked:
+            self.axis = np.cross(
+                self.doRotation, self.projectOnSphere(posX, posY, r))
+            self.angle = math.acos(
+                np.dot(self.doRotation, self.projectOnSphere(posX, posY, r)))
+            glRotate(1, self.axis[0],
+                     self.axis[1], self.axis[2])
+
+        self.doRotation = self.projectOnSphere(posX, posY, r)
 
     def rotate(self, angle, axis):
         c, mc = np.cos(angle), 1 - np.cos(angle)
@@ -193,13 +215,6 @@ class OpenGLViewer:
             # Enable/Disable Shadow
             if key == glfw.KEY_H:
                 print("Schatten an/aus")
-
-    def onSize(self, win, width, height):
-        print("onsize: ", win, width, height)
-        self.width = width
-        self.height = height
-        self.aspect = width/float(height)
-        glViewport(0, 0, self.width, self.height)
 
     def run(self):
         # initializer timer
