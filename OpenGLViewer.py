@@ -79,9 +79,11 @@ class OpenGLViewer:
         self.animation = True
 
         # mouse
-        self.startZoomPoint = (0, 0)
+        self.startZP = (0, 0)
+        self.startMP = (0.0)
         self.middleMouseClicked = False
         self.leftMouseClicked = False
+        self.rightMouseClicked = False
         self.lastY = 0
         self.doRotation = (0, 0, 0)
         self.angle = 0
@@ -131,10 +133,16 @@ class OpenGLViewer:
                 self.rotate(self.angle, self.axis)
                 self.angle = 0
 
+        if button == glfw.MOUSE_BUTTON_RIGHT:
+            if action == glfw.PRESS:
+                self.rightMouseClicked = True
+            elif action == glfw.RELEASE:
+                self.rightMouseClicked = False
+
     def onMouseMove(self, win, posX, posY):
         r = min(self.width, self.height) / 2.0
         if self.middleMouseClicked:
-            y = posY - self.startZoomPoint[1]
+            y = posY - self.startZP[1]
             if self.lastY - y > 0:
                 print(self.lastY - y)
                 glScale(0.95, 0.95, 0.95)
@@ -150,6 +158,13 @@ class OpenGLViewer:
             glRotate(1, self.axis[0],
                      self.axis[1], self.axis[2])
 
+        if self.rightMouseClicked:
+            x = posX - self.startMP[0]
+            y = -(posY - self.startMP[1])
+            print(y)
+            glTranslate(x/self.width, y/self.height, 0)
+
+        self.startMP = (posX, posY)
         self.doRotation = self.projectOnSphere(posX, posY, r)
 
     def rotate(self, angle, axis):
