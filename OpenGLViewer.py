@@ -85,6 +85,8 @@ class OpenGLViewer:
         self.middleMouseClicked = False
         self.leftMouseClicked = False
         self.rightMouseClicked = False
+        self.orthoP = True
+        self.perspP = False
         self.lastY = 0
         self.angle = 0
         self.axis = np.array([1, 0, 0])
@@ -92,20 +94,17 @@ class OpenGLViewer:
     def preventDistort(self, win, width, height):
         self.width = width
         self.height = height
-        self.aspectwidth = float(self.width) / self.height
-        self.aspectheight = float(self.height) / self.width
+
         glViewport(0, 0, self.width, self.height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
-        if width <= height:
-            glOrtho(-1.5, 1.5, (-1.5) * self.aspectheight,
-                    1.5 * self.aspectheight, -1.0, 1.0)
-        else:
-            glOrtho(-1.5 * self.aspectwidth, 1.5 *
-                    self.aspectwidth, -1.5, 1.5, -1.0, 1.0)
+        if self.orthoP:
+            self.changeOrthoP(self.width, self.height)
+        if self.perspP:
+            self.changePerspP(self.width, self.height)
 
-        glMatrixMode(GL_PROJECTION)
+        glMatrixMode(GL_MODELVIEW)
 
     def projectOnSphere(self, x, y, r):
         x, y = x - self.width / 2.0, self.height / 2.0 - y
@@ -233,6 +232,41 @@ class OpenGLViewer:
                     self.scene.shadow = True
                 else:
                     self.scene.shadow = False
+
+            if key == glfw.KEY_O:
+                if self.orthoP == False:
+                    self.orthoP = True
+                    self.perspP = False
+                    self.preventDistort(win, self.width, self.height)
+
+            if key == glfw.KEY_P:
+                if self.perspP == False:
+                    self.perspP = True
+                    self.orthoP = False
+                    self.preventDistort(win, self.width, self.height)
+
+    def changeOrthoP(self, width, height):
+        if self.orthoP:
+            self.aspectwidth = float(self.width) / self.height
+            self.aspectheight = float(self.height) / self.width
+            if width <= height:
+                glOrtho(-1.5, 1.5, -1.5 * self.aspectheight,
+                        1.5 * self.aspectheight, -1.0, 1.0)
+            else:
+                glOrtho(-1.5 * self.aspectwidth, 1.5 *
+                        self.aspectwidth, -1.5, 1.5, -1.0, 1.0)
+
+    def changePerspP(self, width, height):
+        if self.perspP:
+            self.aspectwidth = float(self.width) / self.height
+            self.aspectheight = float(self.height) / self.width
+            if width <= height:
+                glFrustum(-1.0, 1.0, -1.0 * self.aspectheight,
+                          1.0 * self.aspectheight, 1.5, 25)
+            else:
+                glFrustum(-1.0*self.aspectwidth, 1.0 *
+                          self.aspectwidth, -1.0, 1.0, 1.5, 25)
+            gluLookAt(0, 0, 3.5, 0, 0, 0, 0, 2, 0)
 
     def run(self):
         # initializer timer
