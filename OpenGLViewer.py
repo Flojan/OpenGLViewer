@@ -81,11 +81,11 @@ class OpenGLViewer:
         # mouse
         self.startZP = (0, 0)
         self.startMP = (0.0)
+        self.startRot = (0, 0, 0)
         self.middleMouseClicked = False
         self.leftMouseClicked = False
         self.rightMouseClicked = False
         self.lastY = 0
-        self.doRotation = (0, 0, 0)
         self.angle = 0
         self.axis = np.array([1, 0, 0])
 
@@ -126,7 +126,7 @@ class OpenGLViewer:
         if button == glfw.MOUSE_BUTTON_LEFT:
             if action == glfw.PRESS:
                 self.leftMouseClicked = True
-                self.doRotation = self.projectOnSphere(glfw.get_cursor_pos(
+                self.startRot = self.projectOnSphere(glfw.get_cursor_pos(
                     self.window)[0], glfw.get_cursor_pos(self.window)[1], r)
             elif action == glfw.RELEASE:
                 self.leftMouseClicked = False
@@ -152,9 +152,9 @@ class OpenGLViewer:
 
         if self.leftMouseClicked:
             self.axis = np.cross(
-                self.doRotation, self.projectOnSphere(posX, posY, r))
+                self.startRot, self.projectOnSphere(posX, posY, r))
             self.angle = math.acos(
-                np.dot(self.doRotation, self.projectOnSphere(posX, posY, r)))
+                np.dot(self.startRot, self.projectOnSphere(posX, posY, r)))
             glRotate(1, self.axis[0],
                      self.axis[1], self.axis[2])
 
@@ -165,7 +165,7 @@ class OpenGLViewer:
             glTranslate(x/self.width, y/self.height, 0)
 
         self.startMP = (posX, posY)
-        self.doRotation = self.projectOnSphere(posX, posY, r)
+        self.startRot = self.projectOnSphere(posX, posY, r)
 
     def rotate(self, angle, axis):
         c, mc = np.cos(angle), 1 - np.cos(angle)
@@ -229,7 +229,10 @@ class OpenGLViewer:
 
             # Enable/Disable Shadow
             if key == glfw.KEY_H:
-                print("Schatten an/aus")
+                if self.scene.shadow == False:
+                    self.scene.shadow = True
+                else:
+                    self.scene.shadow = False
 
     def run(self):
         # initializer timer

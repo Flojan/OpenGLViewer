@@ -29,6 +29,7 @@ class Scene:
         self.scale = []
         self.myvbo = []
         self.light = (0.0, 0.0, 0.0)
+        self.shadow = False
         self.backgroundCol = (1.0, 1.0, 1.0, 1.0)
         self.objectCol = (0.05, 0.6, 1.0, 1.0)
 
@@ -39,24 +40,20 @@ class Scene:
             lines = f.readlines()
             for line in lines:
                 if line:
-                    # print(line.split()[1:])
-                    # input()
                     if line.startswith('f'):  # Polygone
                         self.faces.append(line.split()[1:])
-                    if line.startswith('v'):  # Objekt-Punkte
-                        self.vertices.append(
-                            [float(v) for v in line.split()[1:]])
-                    if line.startswith('vn'):  # Vertex-Normalen
+                    elif line.startswith('vn'):  # Vertex-Normalen
                         self.normals.append(
                             [float(vn) for vn in line.split()[1:]])
-                        # print(self.normals)
-                        # input("normals")
+                    elif line.startswith('v'):  # Objekt-Punkte
+                        self.vertices.append(
+                            [float(v) for v in line.split()[1:]])
 
             self.boundingbox = [list(map(min, zip(*self.vertices))),
                                 list(map(max, zip(*self.vertices)))]
             self.center = [(x[0] + x[1]) / 2.0 for x in zip(*self.boundingbox)]
-            self.scale = 2.0 / max([x[1] - x[0]
-                                    for x in zip(*self.boundingbox)])
+            self.scale = 0.75 / max([x[1] - x[0]
+                                     for x in zip(*self.boundingbox)])
             self.light = (
                 (self.boundingbox[1][1] - self.boundingbox[0][1]) * 2,
                 (self.boundingbox[1][1] - self.boundingbox[0][1]) * 5,
@@ -162,6 +159,26 @@ class Scene:
         glVertexPointer(3, GL_FLOAT, 24, self.myvbo)
         glNormalPointer(GL_FLOAT, 24, self.myvbo + 12)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+        if self.shadow:
+            p = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0 /
+                 self.light[1], 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            glPushMatrix()
+            glColor(0.0, 0.0, 0.0, 0.0)
+            glDisable(GL_DEPTH_TEST)
+            glDisable(GL_LIGHTING)
+
+            glTranslatef(self.light[0], self.light[1], self.light[2])
+            glTranslatef(0.0, self.boundingbox[0][1], 0.0)
+            glMultMatrixf(p)
+            glTranslatef(0.0, -self.boundingbox[0][1], 0.0)
+            glTranslatef(-self.light[0], -self.light[1], -self.light[2])
+            glDrawArrays(GL_TRIANGLES, 0, len(self.data))
+
+            glEnable(GL_LIGHTING)
+            glEnable(GL_DEPTH_TEST)
+            glPopMatrix()
+
         glColor3f(self.objectCol[0],
                   self.objectCol[1], self.objectCol[2])
         glDrawArrays(GL_TRIANGLES, 0, len(self.data))
