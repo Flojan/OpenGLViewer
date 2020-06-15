@@ -125,12 +125,8 @@ class OpenGLViewer:
         if button == glfw.MOUSE_BUTTON_LEFT:
             if action == glfw.PRESS:
                 self.leftMouseClicked = True
-                self.startRot = self.projectOnSphere(glfw.get_cursor_pos(
-                    self.window)[0], glfw.get_cursor_pos(self.window)[1], r)
             elif action == glfw.RELEASE:
                 self.leftMouseClicked = False
-                self.rotate(self.angle, self.axis)
-                self.angle = 0
 
         if button == glfw.MOUSE_BUTTON_RIGHT:
             if action == glfw.PRESS:
@@ -140,6 +136,7 @@ class OpenGLViewer:
 
     def onMouseMove(self, win, posX, posY):
         r = min(self.width, self.height) / 2.0
+
         if self.middleMouseClicked:
             y = posY - self.startZP[1]
             if self.lastY - y > 0:
@@ -150,17 +147,14 @@ class OpenGLViewer:
             self.lastY = y
 
         if self.leftMouseClicked:
-            self.axis = np.cross(
-                self.startRot, self.projectOnSphere(posX, posY, r))
-            self.angle = math.acos(
-                np.dot(self.startRot, self.projectOnSphere(posX, posY, r)))
-            glRotate(1, self.axis[0],
-                     self.axis[1], self.axis[2])
+            moveP = self.projectOnSphere(posX, posY, r)
+            self.angle = math.acos(np.dot(self.startRot, moveP))
+            self.axis = np.cross(self.startRot, moveP)
+            glRotatef(4, self.axis[0], self.axis[1], self.axis[2])
 
         if self.rightMouseClicked:
             x = posX - self.startMP[0]
             y = -(posY - self.startMP[1])
-            print(y)
             glTranslate(x/self.width, y/self.height, 0)
 
         self.startMP = (posX, posY)

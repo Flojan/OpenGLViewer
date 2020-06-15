@@ -105,6 +105,7 @@ class Scene:
                         self.data.append(self.vertices[vn] + self.normals[vn])
             glScale(self.scale, self.scale, self.scale)
             glTranslate(-self.center[0], -self.center[1], -self.center[2])
+            self.myvbo = vbo.VBO(np.array(self.data, 'f'))
 
         else:
             sys.exit()
@@ -150,7 +151,6 @@ class Scene:
         glClearColor(self.backgroundCol[0], self.backgroundCol[1],
                      self.backgroundCol[2], self.backgroundCol[3])
         glColor3f(self.objectCol[0], self.objectCol[1], self.objectCol[2])
-        self.myvbo = vbo.VBO(np.array(self.data, 'f'))
         self.myvbo.bind()
 
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -186,4 +186,3 @@ class Scene:
         self.myvbo.unbind()
         glDisableClientState(GL_NORMAL_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)
-        glFlush()
