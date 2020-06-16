@@ -79,17 +79,12 @@ class OpenGLViewer:
         self.animation = True
 
         # mouse
-        self.startZP = (0, 0)
-        self.startMP = (0.0)
-        self.startRot = (0, 0, 0)
         self.middleMouseClicked = False
         self.leftMouseClicked = False
         self.rightMouseClicked = False
+        self.lastY = 0
         self.orthoP = True
         self.perspP = False
-        self.lastY = 0
-        self.angle = 0
-        self.axis = np.array([1, 0, 0])
 
     def preventDistort(self, win, width, height):
         self.width = width
@@ -125,8 +120,13 @@ class OpenGLViewer:
         if button == glfw.MOUSE_BUTTON_LEFT:
             if action == glfw.PRESS:
                 self.leftMouseClicked = True
+                self.scene.startP = self.scene.projectOnSphere(
+                    self.scene.mousePosX, self.scene.mousePosY, r)
             elif action == glfw.RELEASE:
                 self.leftMouseClicked = False
+                self.scene.actOri = self.scene.actOri * self.scene.rotate(
+                    self.scene.angle, self.scene.axis)
+                self.scene.angle = 0
 
         if button == glfw.MOUSE_BUTTON_RIGHT:
             if action == glfw.PRESS:
@@ -136,41 +136,33 @@ class OpenGLViewer:
 
     def onMouseMove(self, win, posX, posY):
         r = min(self.width, self.height) / 2.0
+        self.scene.mousePosX = posX
+        self.scene.mousePosY = posY
 
         if self.middleMouseClicked:
-            y = posY - self.startZP[1]
+            y = posY - self.scene.startZP[1]
             if self.lastY - y > 0:
-                print(self.lastY - y)
                 glScale(0.95, 0.95, 0.95)
             else:
                 glScale(1.05, 1.05, 1.05)
             self.lastY = y
 
         if self.leftMouseClicked:
-            moveP = self.projectOnSphere(posX, posY, r)
-            self.angle = math.acos(np.dot(self.startRot, moveP))
-            self.axis = np.cross(self.startRot, moveP)
-            glRotatef(4, self.axis[0], self.axis[1], self.axis[2])
+            moveP = self.scene.projectOnSphere(posX, posY, r)
+            self.scene.angle = math.acos(np.dot(self.scene.startP, moveP))
+            self.scene.axis = np.cross(self.scene.startP, moveP)
+            # glMultMatrixf(self.scene.actOri *
+            #               self.scene.rotate(self.scene.angle, self.scene.axis))
+            glRotatef(2.5, self.scene.axis[0],
+                      self.scene.axis[1], self.scene.axis[2])
 
         if self.rightMouseClicked:
-            x = posX - self.startMP[0]
-            y = -(posY - self.startMP[1])
+            x = posX - self.scene.startMP[0]
+            y = -(posY - self.scene.startMP[1])
             glTranslate(x/self.width, y/self.height, 0)
 
-        self.startMP = (posX, posY)
-        self.startRot = self.projectOnSphere(posX, posY, r)
-
-    def rotate(self, angle, axis):
-        c, mc = np.cos(angle), 1 - np.cos(angle)
-        s = np.sin(angle)
-        l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
-        x, y, z = np.array(axis) / l
-        r = np.array([
-            [x * x * mc + c, x * y * mc - z * s, x * z * mc + y * s, 0],
-            [x * y * mc + z * s, y * y * mc + c, y * z * mc - x * s, 0],
-            [x * z * mc - y * s, y * z * mc + x * s, z * z * mc + c, 0],
-            [0, 0, 0, 1]])
-        return r.transpose()
+        self.scene.startMP = (posX, posY)
+        self.scene.startP = self.scene.projectOnSphere(posX, posY, r)
 
     def onKeyboard(self, win, key, scancode, action, mods):
         print("keyboard: ", win, key, scancode, action, mods)
@@ -227,12 +219,14 @@ class OpenGLViewer:
                 else:
                     self.scene.shadow = False
 
+            # Enable Orthogonal Projection
             if key == glfw.KEY_O:
                 if self.orthoP == False:
                     self.orthoP = True
                     self.perspP = False
                     self.preventDistort(win, self.width, self.height)
 
+            # Enable Perspective Projection
             if key == glfw.KEY_P:
                 if self.perspP == False:
                     self.perspP = True
@@ -278,8 +272,6 @@ class OpenGLViewer:
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
                 # render scene
-                if self.animation:
-                    self.scene.step()
                 self.scene.render()
 
                 glfw.swap_buffers(self.window)

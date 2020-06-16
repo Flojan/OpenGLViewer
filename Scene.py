@@ -16,6 +16,9 @@ class Scene:
         # time
         self.t = 0
         self.showVector = True
+        self.startZP = (0, 0)
+        self.startMP = (0.0)
+        self.startP = (0, 0, 0)
         self.point = np.array([0, 0])
         self.vector = np.array([10, 10])
         self.width = width
@@ -32,6 +35,11 @@ class Scene:
         self.shadow = False
         self.backgroundCol = (1.0, 1.0, 1.0, 1.0)
         self.objectCol = (0.05, 0.6, 1.0, 1.0)
+        self.angle = 0
+        self.axis = np.array([1, 0, 0])
+        self.actOri = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        self.mousePosX = 0
+        self.mousePosY = 0
 
     # read Object from File
     def readObject(self):
@@ -66,10 +74,6 @@ class Scene:
                     self.normals.append([0, 0, 0])
                     counter += 1
                 for face in self.faces:
-                    # print(face.split("//"))
-                    # print(face)
-                    # # print(self.vertices)
-                    # input()
                     n_p1 = int(float(face[0])) - 1
                     n_p2 = int(float(face[1])) - 1
                     n_p3 = int(float(face[2])) - 1
@@ -88,19 +92,13 @@ class Scene:
                         self.normals[n_p3], cross_result).tolist()
 
             for face in self.faces:
-                # print("face", face)
                 for points in face:
-                    # print("points", points)
                     if '/' in points:
-                        # print(points)
-                        # input()
                         vertex = tuple(points.split('//'))
                         v = int(vertex[0]) - 1
                         vn = int(vertex[-1]) - 1
                         self.data.append(self.vertices[v] + self.normals[vn])
                     else:
-                        # print(points)
-                        # input()
                         vn = int(points) - 1
                         self.data.append(self.vertices[vn] + self.normals[vn])
             glScale(self.scale, self.scale, self.scale)
@@ -108,44 +106,30 @@ class Scene:
             self.myvbo = vbo.VBO(np.array(self.data, 'f'))
 
         else:
+            print(".obj-File fehlt!")
             sys.exit()
 
-    # step
-    def step(self):
-        # move point
-        self.point = self.point + 0.1*self.vector
+    def rotate(self, angle, axis):
+        c, mc = np.cos(angle), 1 - np.cos(angle)
+        s = np.sin(angle)
+        l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
+        x, y, z = np.array(axis) / l
+        r = np.matrix([
+            [x * x * mc + c, x * y * mc - z * s, x * z * mc + y * s, 0],
+            [x * y * mc + z * s, y * y * mc + c, y * z * mc - x * s, 0],
+            [x * z * mc - y * s, y * z * mc + x * s, z * z * mc + c, 0],
+            [0, 0, 0, 1]
+        ])
+        return r.transpose()
 
-        # check borders
-        if self.point[0] < -self.width/2:    # point hits left border
-            # mirror at n = [1,0]
-            n = np.array([1, 0])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[0] > self.width/2:    # point hits right border
-            # mirrot at n = [-1,0]
-            n = np.array([-1, 0])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[1] < -self.height/2:           # point hits upper border
-            # mirrot at n = [0,1]
-            n = np.array([0, 1])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[1] > self.height/2:  # point hits lower border
-            # mirrot at n = [0,-1]
-            n = np.array([0, -1])
-            self.vector = self.mirror(self.vector, n)
-
-        # mirror a vector v at plane with normal n
-
-    def mirror(self, v, n):
-        # normalize n
-        normN = n / np.linalg.norm(n)
-        # project negative v on n
-        l = np.dot(-v, n)
-        # mirror v
-        mv = v + 2*l*n
-        return mv
+    def projectOnSphere(self, x, y, r):
+        x, y = x - self.width / 2.0, self.height / 2.0 - y
+        a = min(r * r, x ** 2 + y ** 2)
+        z = np.sqrt(r * r - a)
+        l = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+        return x / l, y / l, z / l
 
     # render
-
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glClearColor(self.backgroundCol[0], self.backgroundCol[1],
